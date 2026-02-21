@@ -8,7 +8,9 @@ __tmp__
 /data
 /html_docs
 /optimize
-/plugins
+/plugins/*
+!/plugins/hello_world
+!/plugins/hello_world/**
 /test/fixtures/scenarios
 /x-pack/build
 node_modules
