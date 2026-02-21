@@ -1,0 +1,14 @@
+{
+  "id": "helloWorldFork",
+  "version": "1.0.0",
+  "kibanaVersion": "kibana",
+  "owner": {
+    "name": "",
+    "githubTeam": ""
+  },
+  "description": "A simple Hello World plugin for this Kibana fork.",
+  "server": true,
+  "ui": true,
+  "requiredPlugins": ["navigation"],
+  "optionalPlugins": []
+}

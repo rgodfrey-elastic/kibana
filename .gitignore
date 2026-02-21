@@ -59,7 +59,9 @@ __tmp__
 
 /html_docs
 .eslintcache
-/plugins/
+/plugins/*
+!/plugins/hello_world/
+!/plugins/hello_world/**
 /data
 disabledPlugins
 webpackstats.json
