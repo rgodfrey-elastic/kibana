@@ -21,7 +21,7 @@ export const HelloWorldApp = ({ basename, notifications, http, navigation }: Hel
 
   const onClickHandler = () => {
     // Use the core http service to make a response to the server API.
-    http.get('/api/hello_world/example').then((res) => {
+    http.get<{ time: string }>('/api/hello_world/example').then((res) => {
       setTimestamp(res.time);
       // Use the core notifications service to display a success message.
       notifications.toasts.addSuccess(
@@ -79,7 +79,7 @@ export const HelloWorldApp = ({ basename, notifications, http, navigation }: Hel
                     values={{ time: timestamp ? timestamp : 'Unknown' }}
                   />
                 </p>
-                <EuiButton type="primary" size="s" onClick={onClickHandler}>
+                <EuiButton color="primary" fill size="s" onClick={onClickHandler}>
                   <FormattedMessage
                     id="helloWorld.buttonText"
                     defaultMessage="Get data"

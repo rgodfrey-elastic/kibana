@@ -1,7 +1,7 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
   "compilerOptions": {
-    "outDir": "./target/types"
+    "outDir": "target/types"
   },
   "include": [
     "index.ts",
@@ -11,5 +11,13 @@
     "server/**/*.ts",
     "../../typings/**/*"
   ],
-  "exclude": []
+  "exclude": ["target/**/*"],
+  "kbn_references": [
+    "@kbn/core",
+    "@kbn/core-plugins-server",
+    "@kbn/i18n",
+    "@kbn/i18n-react",
+    "@kbn/navigation-plugin",
+    "@kbn/shared-ux-router"
+  ]
 }
