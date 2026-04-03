@@ -385,9 +385,20 @@ export class UserProfileService {
         }
         profileId = activatedProfile?.uid;
       } else if (authType === 'apikey') {
-        apiKeyRetrievalRequired = true;
-        this.logger.debug(`Request to get current user profile is authenticated via API key.`);
-        profileId = await this.getCurrentUserProfileIdViaApiKey(clusterClient, request);
+        // For fake requests (e.g. task manager), the profile uid may be pre-populated to avoid
+        // an ES round-trip. The isFakeRequest guard ensures real HTTP requests cannot spoof this.
+        const prePopulatedProfileUid =
+          request.isFakeRequest && typeof request.headers['x-kibana-task-profile-uid'] === 'string'
+            ? request.headers['x-kibana-task-profile-uid']
+            : undefined;
+
+        if (prePopulatedProfileUid) {
+          profileId = prePopulatedProfileUid;
+        } else {
+          apiKeyRetrievalRequired = true;
+          this.logger.debug(`Request to get current user profile is authenticated via API key.`);
+          profileId = await this.getCurrentUserProfileIdViaApiKey(clusterClient, request);
+        }
       }
     }
 

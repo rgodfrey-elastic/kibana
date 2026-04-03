@@ -141,6 +141,15 @@ export const getApiKeyAndUserScope = async (
 
   const apiKeyAndUserScopeByTaskId = new Map<string, ApiKeyAndUserScope>();
 
+  const currentUser = security.authc.getCurrentUser(request);
+  // For fake requests from parent tasks, fall back to the profile uid header propagated
+  // by the parent task's enriched fake request.
+  const profileUid =
+    currentUser?.profile_uid ??
+    (typeof request.headers['x-kibana-task-profile-uid'] === 'string'
+      ? request.headers['x-kibana-task-profile-uid']
+      : undefined);
+
   taskInstances.forEach((task) => {
     const encodedApiKeyResult = apiKeyByTaskIdMap.get(task.id!);
     if (encodedApiKeyResult) {
@@ -152,6 +161,7 @@ export const getApiKeyAndUserScope = async (
           // Set apiKeyCreatedByUser to true if the request includes its own API key, since we do
           // not want to invalidate a specific API key that was not created by the task manager
           apiKeyCreatedByUser: requestHasApiKey(security, request),
+          profileUid,
         },
       });
     }

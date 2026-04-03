@@ -12,11 +12,13 @@ import type {
   SecuritySuggestUserProfilesResponse,
 } from '@elastic/elasticsearch/lib/api/types';
 
+import type { FakeRawRequest } from '@kbn/core/server';
 import {
   elasticsearchServiceMock,
   httpServerMock,
   loggingSystemMock,
 } from '@kbn/core/server/mocks';
+import { kibanaRequestFactory } from '@kbn/core-http-server-utils';
 import { nextTick } from '@kbn/test-jest-helpers';
 
 import { prefixCommaSeparatedValues, UserProfileService } from './user_profile_service';
@@ -632,6 +634,94 @@ describe('UserProfileService', () => {
         expect(securityTelemetry.recordGetCurrentProfileInvocation).toHaveBeenLastCalledWith({
           outcome: 'success',
           apiKeyRetrievalRequired: true,
+        });
+      });
+
+      describe('with pre-populated profile uid header on fake request', () => {
+        it('skips ES round-trip and uses pre-populated profile uid from fake request header', async () => {
+          const fakeRawRequest: FakeRawRequest = {
+            headers: {
+              authorization: `apikey ${testEncodedApiKey}`,
+              'x-kibana-task-profile-uid': 'pre-populated-uid',
+            },
+            path: '/',
+          };
+          const fakeRequest = kibanaRequestFactory(fakeRawRequest);
+
+          mockStartParams.clusterClient.asInternalUser.security.getUserProfile.mockResolvedValue({
+            profiles: [
+              userProfileMock.createWithSecurity({
+                ...mockUserProfile,
+                uid: 'pre-populated-uid',
+              }),
+            ],
+          } as unknown as SecurityGetUserProfileResponse);
+
+          const startContract = userProfileService.start(mockStartParams);
+          const result = await startContract.getCurrent({ request: fakeRequest });
+
+          expect(result?.uid).toBe('pre-populated-uid');
+
+          // No ES round-trip for the API key
+          expect(
+            mockStartParams.clusterClient.asScoped().asCurrentUser.security.getApiKey
+          ).not.toHaveBeenCalled();
+
+          expect(
+            mockStartParams.clusterClient.asInternalUser.security.getUserProfile
+          ).toHaveBeenCalledWith({
+            uid: 'pre-populated-uid',
+            data: undefined,
+          });
+
+          expect(securityTelemetry.recordGetCurrentProfileInvocation).toHaveBeenLastCalledWith({
+            outcome: 'success',
+          });
+        });
+
+        it('does NOT use the header on real (non-fake) requests to prevent spoofing', async () => {
+          const realRequestWithHeader = httpServerMock.createKibanaRequest({
+            headers: {
+              authorization: `apikey ${testEncodedApiKey}`,
+              'x-kibana-task-profile-uid': 'spoofed-uid',
+            },
+          });
+
+          mockStartParams.clusterClient
+            .asScoped()
+            .asCurrentUser.security.getApiKey.mockResolvedValue({
+              api_keys: [{ profile_uid: 'real-uid-from-es' }],
+            } as any);
+
+          mockStartParams.clusterClient.asInternalUser.security.getUserProfile.mockResolvedValue({
+            profiles: [
+              userProfileMock.createWithSecurity({
+                ...mockUserProfile,
+                uid: 'real-uid-from-es',
+              }),
+            ],
+          } as unknown as SecurityGetUserProfileResponse);
+
+          const startContract = userProfileService.start(mockStartParams);
+          const result = await startContract.getCurrent({ request: realRequestWithHeader });
+
+          expect(result?.uid).toBe('real-uid-from-es');
+
+          // ES round-trip IS performed for real requests regardless of the header
+          expect(
+            mockStartParams.clusterClient.asScoped().asCurrentUser.security.getApiKey
+          ).toHaveBeenCalledTimes(1);
+          expect(
+            mockStartParams.clusterClient.asScoped().asCurrentUser.security.getApiKey
+          ).toHaveBeenCalledWith({
+            with_profile_uid: true,
+            id: testApiKeyId,
+          });
+
+          expect(securityTelemetry.recordGetCurrentProfileInvocation).toHaveBeenLastCalledWith({
+            outcome: 'success',
+            apiKeyRetrievalRequired: true,
+          });
         });
       });
     });

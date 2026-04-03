@@ -428,7 +428,8 @@ export class TaskManagerRunner implements TaskRunner {
           const sanitizedTaskInstance = omit(modifiedContext.taskInstance, ['apiKey', 'userScope']);
           const fakeRequest = this.getFakeKibanaRequest(
             modifiedContext.taskInstance.apiKey,
-            modifiedContext.taskInstance.userScope?.spaceId
+            modifiedContext.taskInstance.userScope?.spaceId,
+            modifiedContext.taskInstance.userScope?.profileUid
           );
 
           const abortController = new AbortController();
@@ -1011,11 +1012,18 @@ export class TaskManagerRunner implements TaskRunner {
     return this.definition?.maxAttempts ?? this.defaultMaxAttempts;
   }
 
-  private getFakeKibanaRequest(apiKey?: string, spaceId?: string): KibanaRequest | undefined {
+  private getFakeKibanaRequest(
+    apiKey?: string,
+    spaceId?: string,
+    profileUid?: string
+  ): KibanaRequest | undefined {
     if (apiKey) {
       const requestHeaders: Headers = {};
 
       requestHeaders.authorization = `ApiKey ${apiKey}`;
+      if (profileUid) {
+        requestHeaders['x-kibana-task-profile-uid'] = profileUid;
+      }
       const path = addSpaceIdToPath('/', spaceId || 'default');
 
       const fakeRawRequest: FakeRawRequest = {

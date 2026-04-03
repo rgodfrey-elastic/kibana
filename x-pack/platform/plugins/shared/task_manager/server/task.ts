@@ -288,6 +288,7 @@ export interface TaskUserScope {
   apiKeyId: string;
   spaceId?: string;
   apiKeyCreatedByUser: boolean;
+  profileUid?: string;
 }
 
 /*
