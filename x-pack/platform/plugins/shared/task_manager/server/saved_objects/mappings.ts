@@ -81,6 +81,9 @@ export const taskMappings: SavedObjectsTypeMappingDefinition = {
         apiKeyId: {
           type: 'keyword',
         },
+        profileUid: {
+          type: 'keyword',
+        },
         // NO NEED TO BE INDEXED
         // apiKeyCreatedByUser: {
         //   type: 'boolean',
